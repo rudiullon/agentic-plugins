@@ -86,7 +86,8 @@ collab-dna/
     │   ├── supersession-rubric.md the prune pass: buckets, questions, evidence, conflict of interest
     │   ├── superseded-patterns.md rule shapes found superseded, dated; leads, not verdicts
     │   ├── annotated-session.md   a real three-day session, human turns only, moves labelled
-    │   └── handover-case.md       the case the principles came from
+    │   ├── handover-case.md       the case the principles came from
+    │   └── what-a-redeploy-cannot-undo.md  six production lines with their premises, and which tests to keep
     └── scripts/
         ├── extract_session.py     JSONL transcript → readable markdown + stats
         ├── inspect_setup.py       read-only setup inventory, secrets masked

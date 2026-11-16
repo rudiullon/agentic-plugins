@@ -225,7 +225,8 @@ goes.
 This is not "no tests". The same lead wrote, elsewhere, that behavioural
 tests before a refactor are the cheap choice. The line is between
 verification that exercises the product and prose that describes the
-work.
+work. Which tests are still worth keeping is in
+`what-a-redeploy-cannot-undo.md`.
 
 **Audit:** What proportion of the session's output was product versus
 description of product? Was the verification gate "the flow runs
