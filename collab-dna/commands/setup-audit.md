@@ -1,6 +1,6 @@
 ---
-description: Audit the Claude Code setup for this project — model, permission mode, hooks, every CLAUDE.md in scope, plugins, MCP servers, memory — for anything that forces stops or taxes context
-allowed-tools: Bash(python3:*), Bash(claude:*), Read, Glob
+description: Audit the Claude Code setup for this project — model, permission mode, hooks, every CLAUDE.md in scope, plugins, MCP servers, memory, and the repository's own gates (git hooks, CI) — for anything that forces stops, taxes context, or lets a mistake through
+allowed-tools: Bash(python3:*), Bash(claude:*), Bash(git:*), Bash(gh:*), Read, Glob
 ---
 
 Audit the setup that shapes sessions in the current project, before
@@ -17,8 +17,11 @@ auditing the person.
    every instruction file in scope (global, ancestor, project, local,
    rules) in full, project settings, project skills and commands,
    installed plugins with their skill counts, the project's memory,
-   and the model that answered each recent session.
-3. Read `<skill-dir>/references/setup-rubric.md` and walk its six
+   the repository's gates (active and committed git hooks, CI
+   workflows and what they run, instruction files below the root, the
+   largest tracked files and Markdown), and the model that answered
+   each recent session.
+3. Read `<skill-dir>/references/setup-rubric.md` and walk its seven
    surfaces against the inventory.
 4. Verify the two or three findings you intend to rank highest
    against the repo itself before writing them: the docs the project

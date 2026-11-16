@@ -29,7 +29,12 @@ engineer can see their own sessions the way that lead would.
   before you type (model, effort, permission mode, hooks, every
   CLAUDE.md in scope, plugins, MCP servers, memory), read-only and with
   secrets masked, and reports what forces stops, what taxes every
-  turn, and what is missing. Run it before coaching anyone whose
+  turn, and what is missing. It also inventories the repository's own
+  gates: which git hooks are active or only committed, what CI runs
+  and when, instruction files below the root, and what the repo
+  carries that the next agent would copy. A rule that only holds
+  inside Claude Code does not hold for a teammate on another tool; the
+  report says which ones those are. Run it before coaching anyone whose
   sessions look slow; an inherited setup produces the same profile as
   bad habits.
 - **`/collab-dna:prune`** — finds the standing rules in every CLAUDE.md,
@@ -82,14 +87,14 @@ collab-dna/
     ├── references/
     │   ├── principles.md          the sixteen moves, with evidence and counterweights
     │   ├── audit-rubric.md        procedure, stats signals, report shapes, tone
-    │   ├── setup-rubric.md        the six setup surfaces and the setup report shape
+    │   ├── setup-rubric.md        the seven setup surfaces and the setup report shape
     │   ├── supersession-rubric.md the prune pass: buckets, questions, evidence, conflict of interest
     │   ├── superseded-patterns.md rule shapes found superseded, dated; leads, not verdicts
     │   ├── annotated-session.md   a real three-day session, human turns only, moves labelled
     │   └── handover-case.md       the case the principles came from
     └── scripts/
         ├── extract_session.py     JSONL transcript → readable markdown + stats
-        ├── inspect_setup.py       read-only setup inventory, secrets masked
+        ├── inspect_setup.py       read-only setup inventory, secrets masked; git hooks, CI, and repo weight
         └── find_stale.py          missing paths, old rule lines, state claims, memory drift, last-pass stamp
 ```
 

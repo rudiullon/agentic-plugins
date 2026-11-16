@@ -3,7 +3,9 @@
 A session is shaped before the human types. The model answering, the
 permission mode, the hooks, every CLAUDE.md in scope, the plugins and
 MCP servers loaded into context, and what the project remembers between
-sessions all decide how much the human has to do by hand. A setup that
+sessions all decide how much the human has to do by hand. The
+repository's own gates decide what happens after the session, for
+everyone. A setup that
 prompts on every tool call, carries "ask before" rules from an old
 project, and loads thirty skills into every session produces exactly
 the profile a session audit flags as the human's fault: stops, retyped
@@ -29,7 +31,7 @@ more than any single finding below.
 
 Each surface opens with what good looks like, so that a clean surface
 gets one confident line in the report rather than a hunt for something
-to say. Most well-run setups come back clean on four of six.
+to say. Most well-run setups come back clean on most of them.
 
 ### 1. Model and effort
 
@@ -196,13 +198,84 @@ only in memory or chat.
   if the rules are not in `CLAUDE.md` or the ways-of-working doc, the
   human will keep typing them.
 
+### 7. Repository gates
+
+**Good:** one check command, named in the instruction file, that a git
+hook runs before a push leaves the machine and CI runs again on the
+default branch, so the gate holds for every person and every tool and
+not only inside Claude Code; the hooks are committed and active; no
+instruction files below the root; nothing in the repo a new agent
+would copy by mistake. A project with no users yet, or a static site
+someone publishes by hand, needs less than this: say so in one line
+and move on.
+
+The first six surfaces shape one person's sessions. This one is
+shared. It is what stops a mistake after the session, whoever or
+whatever made it, and it is where a rule goes when it has to hold for
+a teammate on another tool. The inventory's "Repository gates" section
+lists the git hooks active on this machine and what they run, hook
+directories that are committed but not active, each CI workflow's
+triggers and commands, instruction files below the root, and the
+largest tracked files and Markdown. It is local: it does not ask the
+host whether the default branch is protected.
+
+- **A gate that exists only inside Claude Code.** PreToolUse hooks and
+  permission rules stop the agent in this harness. A teammate on
+  another tool, or a person at a terminal, pushes straight past them.
+  If the check matters, it belongs in a git hook or CI as well. Name
+  the Claude hook and the git-level one that is missing.
+- **Hooks committed but not active.** A `.githooks/` or `.husky/`
+  directory in the repo and a hooks path that does not point at it.
+  The gate is installed for whoever ran the setup step and silently
+  absent for everyone else. The edit is the install step
+  (`git config core.hooksPath .githooks`, or the package manager's
+  prepare script) written where a fresh clone runs it.
+- **CI and the local gate run different commands.** The hook runs one
+  thing, the workflow another, the instruction file names a third. The
+  agent passes whichever it was told about and the push fails on the
+  other, or passes when it should not. One check command, named once,
+  run in both places.
+- **CI that only reports after the fact.** A workflow triggered on
+  push to the default branch, on a host that deploys from that branch,
+  tells you about the failure after production has it. Either the same
+  check runs before the push (the git hook), or the branch is
+  protected and requires the check. The inventory cannot see
+  protection; verify it with
+  `gh api repos/<owner>/<repo>/branches/<branch>/protection` before
+  ranking this finding.
+- **No gate at all on a project with users.** Nothing between a commit
+  and production except someone remembering to run the tests. The
+  session audit asks whether the human confirmed the software runs or
+  let the gate do it (move 12); here there is no gate to let. Say what
+  the check command should be and where it runs.
+- **Instruction files below the root.** A `CLAUDE.md` or `AGENTS.md`
+  inside a subdirectory, often arrived with a design export, a
+  vendored package, or a generated scaffold, loads whenever the agent
+  reads a file beside it, and nobody on the team chose its rules.
+  Delete it, or move the one line worth keeping to the root file.
+- **A repository that teaches the wrong thing.** Agents copy what the
+  repo shows them. Very large tracked files (screenshots, exports,
+  build output) and Markdown that outweighs the product (logs of past
+  work, follow-up lists, plans that already shipped) read as how this
+  project works, and the next session produces more of the same. This
+  is move 9 measured in the repo instead of in a session. Name the
+  files. The edit is deleting them and moving open work to the issue
+  tracker; if it has already recurred, a hook that refuses them.
+- **A gate heavier than the risk.** The opposite failure. Every push
+  runs a long suite, docs-only changes included, so people reach for
+  `--no-verify` and the gate stops being one. A gate sized by what the
+  change could break (nothing for docs and config, the check for code
+  that deploys, more for migrations, auth, and data) is one that gets
+  run. Quote the hook and say which changes it should let through.
+
 ## Report shape
 
 ```
 # Setup audit: <project>
 
 <one line: Claude Code version, model, effort, permission mode, count
-of instruction lines in scope, plugins on, MCP servers, memory files>
+of instruction lines in scope, plugins on, MCP servers, memory files,
+and whether a git hook and CI run the project's check>
 
 ## What is making stops the default
 <findings from surfaces 2, 3, 4 that force the human into the loop;
@@ -215,6 +288,13 @@ project does not use; each with the edit>
 ## What is missing
 <standing directives, hooks, memory, or plugins the doctrine assumes
 and the setup lacks; each with the exact text or command>
+
+## What the repository lets through
+<findings from surface 7: gates that exist only in this harness or
+only on this machine, CI that disagrees with the local check or runs
+after the fact, instruction files below the root, files the next agent
+would copy; each with the inventory line and the exact edit. One line
+if the project has no users yet and needs no gate>
 
 ## What is superseded
 <rules the harness now does unaided or now contradicts; one line each

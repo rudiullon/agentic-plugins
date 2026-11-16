@@ -2,7 +2,9 @@
 """Inventory everything that shapes a Claude Code session before the human
 types: models and effort, permission mode and rules, hooks, every
 CLAUDE.md in scope, project rules, skills, commands, agents, plugins,
-MCP servers, and the project's memory. Read-only. Secrets are masked.
+MCP servers, the project's memory, and the repository's own gates (git
+hooks, CI, instruction files below the root, what the repo carries).
+Read-only and local. Secrets are masked.
 
 Usage:
   inspect_setup.py [--project DIR] [--out FILE]
@@ -103,6 +105,148 @@ def plugin_entries(gs, project):
                             skills=glob.glob(os.path.join(path, "skills", "*", "SKILL.md")),
                             cmds=glob.glob(os.path.join(path, "commands", "*.md")),
                             hooks=hooks, mcp=list((mcp.get("mcpServers") or {}).keys())))
+    return out
+
+
+def git(root, *args, timeout=20):
+    try:
+        r = subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, timeout=timeout)
+    except Exception:
+        return None
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def workflow_summary(path):
+    """Triggers and run commands of one CI workflow, without a YAML parser."""
+    t = read_text(path, 400)
+    if not t:
+        return [], []
+    lines = t[1].split("\n")
+    triggers, runs = [], []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        m = re.match(r"^(?:on|\"on\"|'on'):\s*(.*)$", line)
+        if m:
+            if m.group(1).strip():
+                triggers.append(m.group(1).strip())
+            j = i + 1
+            while j < len(lines) and (not lines[j].strip() or lines[j].startswith((" ", "\t"))):
+                if re.match(r"^\s{2}[\w-]+:", lines[j]) or re.match(r"^\s{2}-\s*\w", lines[j]):
+                    triggers.append(lines[j].strip().rstrip(":").lstrip("- "))
+                j += 1
+        m = re.match(r"^\s*(?:-\s*)?run:\s*(.*)$", line)
+        if m:
+            cmd = m.group(1).strip()
+            if cmd in ("|", ">", "|-", ">-", ""):
+                block = []
+                j = i + 1
+                while j < len(lines) and len(block) < 4 and (not lines[j].strip() or lines[j].startswith((" ", "\t"))):
+                    if lines[j].strip():
+                        block.append(lines[j].strip())
+                    j += 1
+                cmd = "; ".join(block)
+            if cmd:
+                runs.append(cmd[:160])
+        i += 1
+    return triggers, runs
+
+
+def repo_gates(project):
+    """What stands between a change on this machine and the people who use
+    the product, for every person and tool and not only inside Claude Code:
+    git hooks, CI, and what the repository itself would teach the next
+    agent. Local and read-only; nothing here asks the host."""
+    out = section("Repository gates")
+    root = git(project, "rev-parse", "--show-toplevel")
+    if not root:
+        out.append("- not a git repository: no git hooks or CI to inventory")
+        return out
+    branch = git(root, "rev-parse", "--abbrev-ref", "HEAD") or "?"
+    default = git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    out.append(f"- current branch: `{branch}`; default branch on origin: `{default or '(origin/HEAD not set)'}`")
+
+    # Git hooks: what is active on this machine, and what is committed.
+    configured = git(root, "config", "--get", "core.hooksPath")
+    active = git(root, "rev-parse", "--git-path", "hooks") or os.path.join(".git", "hooks")
+    active_abs = active if os.path.isabs(active) else os.path.join(root, active)
+    out.append(f"- core.hooksPath: `{configured or '(unset: .git/hooks, which is not committed)'}`")
+    live = []
+    if os.path.isdir(active_abs):
+        live = sorted(f for f in os.listdir(active_abs)
+                      if not f.endswith(".sample") and os.path.isfile(os.path.join(active_abs, f)))
+    out.append(f"- active git hooks on this machine: {', '.join(live) if live else 'none'}")
+    committed = []
+    for d in (".githooks", ".husky"):
+        p = os.path.join(root, d)
+        if os.path.isdir(p):
+            files = sorted(f for f in os.listdir(p) if os.path.isfile(os.path.join(p, f)) and not f.startswith("."))
+            reached = os.path.abspath(active_abs).startswith(os.path.abspath(p))
+            committed.append((d, files, reached))
+            out.append(f"- committed hook directory `{d}/`: {', '.join(files) or '(empty)'}; "
+                       + ("the active hooks path points at it" if reached else
+                          "NOT ACTIVE on this machine: the hooks path does not point at it"))
+    if not committed:
+        out.append("- no committed hook directory (.githooks/, .husky/): any hook above exists on this machine only")
+    shown = set()
+    for d, files, _ in committed:
+        for f in files:
+            if f in ("pre-push", "pre-commit", "commit-msg") and f not in shown:
+                shown.add(f)
+                t = read_text(os.path.join(root, d, f), 40)
+                out.append(f"\n**{d}/{f}** ({t[0]} lines)\n")
+                out += fenced(t[1], "bash")
+    for f in live:
+        if f in ("pre-push", "pre-commit", "commit-msg") and f not in shown:
+            t = read_text(os.path.join(active_abs, f), 40)
+            if t:
+                out.append(f"\n**{f}** (active, {t[0]} lines)\n")
+                out += fenced(t[1], "bash")
+
+    # CI: which commands run, and when.
+    flows = sorted(glob.glob(os.path.join(root, ".github", "workflows", "*.yml")) +
+                   glob.glob(os.path.join(root, ".github", "workflows", "*.yaml")))
+    out.append(f"\n- GitHub Actions workflows: {len(flows)}")
+    for w in flows:
+        triggers, runs = workflow_summary(w)
+        out.append(f"  - `{os.path.relpath(w, root)}`: on {', '.join(triggers) or '?'}; runs: "
+                   + ("; ".join(f"`{r}`" for r in runs[:8]) if runs else "(no run steps found)"))
+    other = [n for n in (".gitlab-ci.yml", os.path.join(".circleci", "config.yml"), "bitbucket-pipelines.yml",
+                         "Jenkinsfile", "azure-pipelines.yml") if os.path.exists(os.path.join(root, n))]
+    if other:
+        out.append(f"- other CI configuration: {', '.join(other)}")
+    out.append("- branch protection: not checked (this inventory is local). To see whether the default branch "
+               "requires a check or a review: `gh api repos/<owner>/<repo>/branches/<branch>/protection`")
+
+    # What the repository teaches: instruction files below the root, and weight.
+    listing = git(root, "ls-files", "-z", timeout=60)
+    tracked = [f for f in (listing or "").split("\0") if f]
+    nested = [f for f in tracked
+              if os.path.basename(f) in ("CLAUDE.md", "CLAUDE.local.md", "AGENTS.md")
+              and os.path.dirname(f) not in ("", ".claude")]
+    out.append(f"- instruction files below the root (tracked): {len(nested)}"
+               + (": " + ", ".join(f"`{f}`" for f in nested[:20]) if nested else ""))
+    sizes = []
+    for f in tracked:
+        try:
+            sizes.append((os.path.getsize(os.path.join(root, f)), f))
+        except OSError:
+            pass
+    sizes.sort(reverse=True)
+    total = sum(s for s, _ in sizes)
+    out.append(f"- tracked files: {len(sizes)}, {total / 1e6:.1f} MB. Largest: "
+               + ("; ".join(f"`{f}` ({s / 1024:.0f} KB)" for s, f in sizes[:5]) or "none"))
+    docs = []
+    for s, f in sizes:
+        if f.lower().endswith((".md", ".mdx")) and s <= 2_000_000:
+            try:
+                with open(os.path.join(root, f), encoding="utf-8", errors="replace") as fh:
+                    docs.append((len(fh.read().split()), f))
+            except OSError:
+                pass
+    docs.sort(reverse=True)
+    out.append(f"- tracked Markdown: {len(docs)} files, {sum(w for w, _ in docs):,} words. Longest: "
+               + ("; ".join(f"`{f}` ({w:,} words)" for w, f in docs[:5]) or "none"))
     return out
 
 
@@ -256,6 +400,9 @@ def main():
             fm = frontmatter(f)
             d = fm.get("description") or ""
             out.append(f"  - `{os.path.basename(f)}`: {d[:140]}{'…' if len(d) > 140 else ''}")
+
+    # Repository gates: git hooks, CI, and what the repo teaches
+    out += repo_gates(project)
 
     # Sessions for this project: models used
     out += section("Sessions on this machine for this project (model that answered)")
