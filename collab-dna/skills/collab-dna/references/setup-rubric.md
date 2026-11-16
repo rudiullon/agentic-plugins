@@ -139,6 +139,15 @@ in context every turn. Read every one in the inventory.
   "flag time-sensitive training knowledge" directive, no push policy,
   no statement of who the reader of deliverables is. The audit's
   "write this down" items belong here; check whether they arrived.
+- **No statement of what a redeploy cannot undo.** The project file
+  has rules about style and process and nothing about how production
+  deploys and holds data: migrations, what clients read, queued work,
+  how data gets in, who may run a production command. Those are the
+  lines no model can infer and the ones that cost most when missing.
+  `what-a-redeploy-cannot-undo.md` has the defaults and the premise
+  behind each; the edit is the project's own version of the ones whose
+  premise holds there. On a project with no users yet, their absence
+  is fine. Say so.
 - **Length.** A global file over about a hundred lines, or a project
   file that is an encyclopedia rather than a router, is a tax on every
   turn and dilutes the rules that matter. Say what to move to `docs/`.
