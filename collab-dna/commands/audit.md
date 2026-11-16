@@ -56,9 +56,16 @@ When the argument is `project`:
    two reference files and the single-session report shape, ask each
    for the moves table and findings only, and synthesise. Do not hold
    many transcripts in one context.
-4. Produce the project report in the rubric's project shape: habits
-   across sessions, repeated corrections, trajectory, findings ranked
-   by project-wide cost, and the standing instructions to write.
+4. Run `python3 <skill-dir>/scripts/delivery.py` for the period the
+   sessions cover, and again for an equal period just before it
+   (`--since`/`--until`). Add `--prs` when the project's changes
+   travel through pull requests; that mode asks the host through `gh`.
+   It is read-only and prints a Markdown table: how often changes
+   landed, how long they took, how many were fixes after a failure.
+5. Produce the project report in the rubric's project shape: habits
+   across sessions, repeated corrections, trajectory, what shipped,
+   findings ranked by project-wide cost, and the standing instructions
+   to write.
 
 Keep a single-session report around 1,200 words and a project report
 around 2,000. In the project habits table, rows where every session

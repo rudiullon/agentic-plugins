@@ -1,7 +1,7 @@
 ---
 name: collab-dna
 description: "How we build with agents, captured as auditable moves. Use this whenever someone wants to get better at working with Claude Code or any coding agent: 'audit my session', 'review how I worked with you', 'retro on this conversation', 'how could I have driven this better', 'what should I improve in how I prompt', 'grade my collaboration', 'look at my last session', 'why did this take so many turns', 'am I using you well', 'show me the principles', 'how does our lead work with Claude', 'audit my setup', 'check my CLAUDE.md', 'is my harness slowing me down', 'why does Claude keep stopping to ask me', 'what plugins and rules am I carrying', 'prune my CLAUDE.md', 'which of my rules are outdated', 'what here is cruft', 'clean up my memory files', 'we upgraded models, what should change in my setup'. Also use it when a session has just ended badly (rebuilt artifacts, many corrections, wrong direction held too long) and the human asks what went wrong, even if they do not say 'audit'. Do not use it for code review; it reviews the human's moves, not the code."
-version: 0.3.0
+version: 0.4.0
 allowed-tools: Bash, Read, Glob, Grep
 ---
 
@@ -50,6 +50,7 @@ What this skill does:
 | `references/handover-case.md` | The case the principles came from: a handover that drifted into a port while every gate passed | When the audit touches legacy work, plan shape, or "fast but wrong direction" |
 | `references/setup-rubric.md` | The six setup surfaces, what a bad one looks like on each, the edit, and the setup report shape | Before any setup audit |
 | `scripts/inspect_setup.py` | Read-only inventory of the setup surfaces, secrets masked, plus the model behind each recent session | For any setup audit |
+| `scripts/delivery.py` | Read-only delivery table for a period: how often changes landed, how long they took, how many were fixes after a failure; from local commits, or from pull requests with `--prs` | For a project audit, beside the sessions' trajectory |
 | `scripts/extract_session.py` | Turns a Claude Code JSONL transcript into readable markdown plus a stats block; `project` mode does every session of the project into a directory with an index | For any audit of a past session or a project |
 
 ## Auditing a past session
@@ -105,6 +106,17 @@ synthesise into the project report shape. The project report's value
 is recurrence: the same correction in several sessions is a standing
 instruction that was never written, and a move absent everywhere is a
 blind spot.
+
+Then measure what those sessions shipped:
+
+```
+python3 <skill-dir>/scripts/delivery.py --since YYYY-MM-DD --until YYYY-MM-DD [--prs]
+```
+
+Run it for the audited period and for an equal period before it. The
+sessions say whether the human drove better; the table says whether
+more reached users, sooner, with fewer fixes after the fact. Report
+both, and say so when they disagree.
 
 ## Auditing the setup
 

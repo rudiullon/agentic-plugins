@@ -22,7 +22,11 @@ engineer can see their own sessions the way that lead would.
   across every session of the current project, worktree sessions
   included. This is the one to run for coaching: it finds the
   correction you typed in four sessions, the move you never make, and
-  whether the last session was better than the first.
+  whether the last session was better than the first. It also measures
+  what those sessions shipped (how often changes landed, how long they
+  took, how many were fixes after a failure) for the audited period
+  and the one before, so "did this get better" has an answer that is
+  not the auditor's opinion.
 - **`/collab-dna:retro`** — the same audit of the conversation you are
   in. Good before a compaction or at the end of a long build.
 - **`/collab-dna:setup-audit`** — inventories what shapes a session
@@ -88,6 +92,7 @@ collab-dna/
     │   ├── annotated-session.md   a real three-day session, human turns only, moves labelled
     │   └── handover-case.md       the case the principles came from
     └── scripts/
+        ├── delivery.py            read-only delivery table: frequency, lead time, fixes after failure
         ├── extract_session.py     JSONL transcript → readable markdown + stats
         ├── inspect_setup.py       read-only setup inventory, secrets masked
         └── find_stale.py          missing paths, old rule lines, state claims, memory drift, last-pass stamp
