@@ -219,6 +219,17 @@ Procedure:
    count of repeats is its cost.
 5. Look for trajectory: the first session against the last. What
    improved, what did not, what got worse as the work got bigger.
+   Then ask the same of what the sessions shipped. Run
+   `scripts/delivery.py` for the period the sessions cover and for an
+   equal period just before it (`--prs` when changes travel through
+   pull requests, the default when they land straight on one branch).
+   The sessions say whether the human drove better; the delivery table
+   says whether more reached users, sooner, with fewer fixes after the
+   fact. When the two disagree, that is the finding: moves improving
+   while lead time grows means the constraint is outside the session
+   (a gate, a review queue, a deploy), and the setup audit's
+   repository surface is where to look next. Do not rank people or
+   projects with it, and do not read a short window as a trend.
 6. Rank findings by cost across the project, not within a session.
    A move missed once in a two-hour session ranks below a move missed
    in every session.
@@ -250,6 +261,14 @@ once per session with the session id, and what it cost in total>
 ## Trajectory
 <first session against last: what improved, what did not, what got
 worse with scale>
+
+## What shipped
+<the delivery table for the audited period beside the equal period
+before it, as `scripts/delivery.py` printed them; one or two lines on
+whether delivery moved the way the sessions did, and what the table
+cannot see (incidents, time to restore) if the project keeps no
+incident log. Leave the section out, with one line saying why, when
+the history is too thin to say anything>
 
 ## What cost the most
 ### 1. <finding as a claim, project-wide>
